@@ -2,8 +2,9 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from src.features.build_features import FeatureEngineering
 
-# Project Directory Setup (Same as your previous script)
+# Project Directory Setup
 project_dir = os.getcwd()
 raw_data_dir = os.path.join(project_dir, "data", "raw", "1023")
 
@@ -85,7 +86,6 @@ if __name__ == "__main__":
     sp500_stocks_df = convert_to_datetime(sp500_stocks_df, ["Date"])
 
     # Example of additional exploration
-    # You can add your EDA code here
     if sp500_index_df is not None:
         # Plotting S&P 500 index
         plt.figure(figsize=(10, 6))
@@ -98,12 +98,53 @@ if __name__ == "__main__":
         plt.show()
 
     if sp500_stocks_df is not None:
-
         # Example: Check for rows with mostly missing data in sp500_stocks_df
-        missing_data = (
-            sp500_stocks_df.iloc[:, 2:].isnull().all(axis=1)
-        )  # Check all columns from index 2 onwards
+        missing_data = sp500_stocks_df.iloc[:, 2:].isnull().all(axis=1)
         print("\nNumber of rows with missing data:", missing_data.sum())
 
         # Display rows with mainly missing data
         print(sp500_stocks_df[missing_data].head())
+
+        # Example - Feature engineering, assuming we will use Adj Close as the target feature and we will be using all stocks data
+        sp500_stocks_df = sp500_stocks_df.dropna(subset=["Adj Close"])
+        sp500_stocks_df = sp500_stocks_df.sort_values(by="Date")
+
+        # Create an instance of FeatureEngineering
+        feature_eng = FeatureEngineering()
+
+        # Lag features for adj close price
+        lags_to_use = [1, 7, 30]
+        sp500_stocks_df = feature_eng.create_lag_features(
+            sp500_stocks_df, "Adj Close", lags_to_use
+        )
+
+        # Rolling window features
+        windows_to_use = [7, 30, 90]
+        sp500_stocks_df = feature_eng.create_rolling_features(
+            sp500_stocks_df, "Adj Close", windows_to_use
+        )
+
+        # Calendar features
+        sp500_stocks_df = feature_eng.create_calendar_features(sp500_stocks_df, "Date")
+
+        # Merge company data
+        sp500_stocks_df = feature_eng.merge_company_data(
+            sp500_stocks_df, sp500_companies_df
+        )
+
+        print("\nFirst 5 rows with engineered features: ")
+        print(sp500_stocks_df.head())
+        print("\n Columns in the dataframe: ")
+        print(sp500_stocks_df.columns.tolist())
+
+        # Example: Time-series data splitting
+        train_data, val_data, test_data = feature_eng.time_series_split(
+            sp500_stocks_df, "Date"
+        )
+
+        if train_data is not None:
+            print(f"\nTraining set size: {len(train_data)}")
+            print(f"Validation set size: {len(val_data)}")
+            print(f"Test set size: {len(test_data)}")
+            print("\nFirst 5 rows of the train set")
+            print(train_data.head())
