@@ -2,7 +2,15 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from src.features.build_features import FeatureEngineering
+
+from features.build_features import FeatureEngineering
+from models.baseline import PersistenceModel
+from models.arima import ARIMAModel
+from models.prophet import ProphetModel
+from models.lstm import LSTMModel
+from models.xgboost_model import XGBoostModel
+from models.model_utils import evaluate_model
+
 
 # Project Directory Setup
 project_dir = os.getcwd()
@@ -148,3 +156,61 @@ if __name__ == "__main__":
             print(f"Test set size: {len(test_data)}")
             print("\nFirst 5 rows of the train set")
             print(train_data.head())
+
+            # Baseline Model
+            baseline_model = PersistenceModel()
+            baseline_model.train(
+                train_data
+            )  # Not needed for persistance model but kept for consistancy
+            baseline_predictions = baseline_model.predict(test_data)
+
+            if baseline_predictions is not None:
+                print("\nBaseline (Persistence) Model Evaluation:")
+                evaluate_model(
+                    test_data["Adj Close"].iloc[1:], baseline_predictions.iloc[1:]
+                )
+
+            # ARIMA Model
+            arima_model = ARIMAModel(order=(5, 1, 0))  # Example order
+            arima_model.train(train_data, target_column="Adj Close")
+            if arima_model.trained:
+                arima_predictions = arima_model.predict(
+                    test_data, target_column="Adj Close"
+                )
+                if arima_predictions is not None:
+                    print("\nARIMA Model Evaluation:")
+                    evaluate_model(test_data["Adj Close"], arima_predictions)
+
+            # Prophet Model
+            prophet_model = ProphetModel()
+            prophet_model.train(train_data, target_column="Adj Close")
+            if prophet_model.trained:
+                prophet_predictions = prophet_model.predict(
+                    test_data, target_column="Adj Close"
+                )
+                if prophet_predictions is not None:
+                    print("\nProphet Model Evaluation:")
+                    evaluate_model(test_data["Adj Close"], prophet_predictions)
+
+            # LSTM Model
+            lstm_model = LSTMModel()
+            lstm_model.train(train_data, val_data, target_column="Adj Close")
+            if lstm_model.trained:
+                lstm_predictions = lstm_model.predict(
+                    test_data, target_column="Adj Close"
+                )
+                if lstm_predictions is not None:
+                    print("\nLSTM Model Evaluation:")
+                    # Since LSTM is predicting after 'seq_length' of the data, hence using appropriate indeces
+                    evaluate_model(test_data["Adj Close"].iloc[10:], lstm_predictions)
+
+            # XGBoost Model
+            xgboost_model = XGBoostModel()
+            xgboost_model.train(train_data, val_data, target_column="Adj Close")
+            if xgboost_model.trained:
+                xgboost_predictions = xgboost_model.predict(
+                    test_data, target_column="Adj Close"
+                )
+                if xgboost_predictions is not None:
+                    print("\nXGBoost Model Evaluation:")
+                    evaluate_model(test_data["Adj Close"], xgboost_predictions)
