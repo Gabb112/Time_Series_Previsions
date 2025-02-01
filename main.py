@@ -2,6 +2,9 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
 from features.build_features import FeatureEngineering
 from models.baseline import PersistenceModel
@@ -10,6 +13,7 @@ from models.prophet import ProphetModel
 from models.lstm import LSTMModel
 from models.xgboost_model import XGBoostModel
 from models.model_utils import evaluate_model
+from models.model_utils import plot_predictions
 
 
 # Project Directory Setup
@@ -157,11 +161,13 @@ if __name__ == "__main__":
             print("\nFirst 5 rows of the train set")
             print(train_data.head())
 
-            # Baseline Model
+            # --- Model Training and Evaluation ---
+
+            # 1. Baseline Model
             baseline_model = PersistenceModel()
             baseline_model.train(
                 train_data
-            )  # Not needed for persistance model but kept for consistancy
+            )  # Not needed for persistence model but kept for consistency
             baseline_predictions = baseline_model.predict(test_data)
 
             if baseline_predictions is not None:
@@ -169,8 +175,8 @@ if __name__ == "__main__":
                 evaluate_model(
                     test_data["Adj Close"].iloc[1:], baseline_predictions.iloc[1:]
                 )
-
-            # ARIMA Model
+                plot_predictions(test_data["Adj Close"].iloc[1:], baseline_predictions.iloc[1:], model_name="Persistence Model")
+            # 2. ARIMA Model
             arima_model = ARIMAModel(order=(5, 1, 0))  # Example order
             arima_model.train(train_data, target_column="Adj Close")
             if arima_model.trained:
@@ -180,8 +186,9 @@ if __name__ == "__main__":
                 if arima_predictions is not None:
                     print("\nARIMA Model Evaluation:")
                     evaluate_model(test_data["Adj Close"], arima_predictions)
+                    plot_predictions(test_data["Adj Close"], arima_predictions, model_name="ARIMA Model")
 
-            # Prophet Model
+            # 3. Prophet Model
             prophet_model = ProphetModel()
             prophet_model.train(train_data, target_column="Adj Close")
             if prophet_model.trained:
@@ -191,8 +198,10 @@ if __name__ == "__main__":
                 if prophet_predictions is not None:
                     print("\nProphet Model Evaluation:")
                     evaluate_model(test_data["Adj Close"], prophet_predictions)
+                    plot_predictions(test_data["Adj Close"], prophet_predictions, model_name="Prophet Model")
 
-            # LSTM Model
+
+            # 4. LSTM Model
             lstm_model = LSTMModel()
             lstm_model.train(train_data, val_data, target_column="Adj Close")
             if lstm_model.trained:
@@ -201,10 +210,12 @@ if __name__ == "__main__":
                 )
                 if lstm_predictions is not None:
                     print("\nLSTM Model Evaluation:")
-                    # Since LSTM is predicting after 'seq_length' of the data, hence using appropriate indeces
+                    # Since LSTM is predicting after 'seq_length' of the data, hence using appropriate indices
                     evaluate_model(test_data["Adj Close"].iloc[10:], lstm_predictions)
+                    plot_predictions(test_data["Adj Close"].iloc[10:], lstm_predictions, model_name="LSTM Model")
 
-            # XGBoost Model
+
+            # 5. XGBoost Model
             xgboost_model = XGBoostModel()
             xgboost_model.train(train_data, val_data, target_column="Adj Close")
             if xgboost_model.trained:
@@ -214,3 +225,4 @@ if __name__ == "__main__":
                 if xgboost_predictions is not None:
                     print("\nXGBoost Model Evaluation:")
                     evaluate_model(test_data["Adj Close"], xgboost_predictions)
+                    plot_predictions(test_data["Adj Close"], xgboost_predictions, model_name="XGBoost Model")

@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+import matplotlib.pyplot as plt
 
 
 def calculate_rmse(y_true, y_pred):
@@ -32,3 +33,15 @@ def evaluate_model(y_true, y_pred):
     print(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
     print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
     return mae, rmse, mape
+
+def plot_predictions(y_true, y_pred, model_name="Model"):
+    """Plots the true vs. predicted values."""
+    plt.figure(figsize=(10, 6))
+    plt.plot(y_true.values, label="True Values", color='blue')
+    plt.plot(y_pred, label="Predictions", color='red', linestyle='--')
+    plt.title(f"{model_name} Predictions vs True Values")
+    plt.xlabel("Time Steps")
+    plt.ylabel("Value")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
