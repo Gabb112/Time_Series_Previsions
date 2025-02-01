@@ -53,6 +53,7 @@ class LSTMModel(ModelTrainer):
         try:
             train_data_values = train_data[target_column].values.reshape(-1, 1)
             val_data_values = val_data[target_column].values.reshape(-1, 1)
+
             # Normalizing the train and validation data
             train_data_scaled = self.scaler.fit_transform(train_data_values)
             val_data_scaled = self.scaler.transform(val_data_values)
@@ -62,6 +63,14 @@ class LSTMModel(ModelTrainer):
                 train_data_scaled, seq_length
             )
             val_seq, val_labels = self._create_sequences(val_data_scaled, seq_length)
+
+            # Check if there are enough samples to create sequences.
+            if len(train_seq) == 0:
+                print("Error: Not enough train data to create sequences")
+                return None
+            if len(val_seq) == 0:
+                print("Error: Not enough validation data to create sequences")
+                return None
 
             # Convert data to tensors and create dataloaders
             train_seq_tensor = torch.FloatTensor(train_seq)

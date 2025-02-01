@@ -29,8 +29,12 @@ class XGBoostModel(ModelTrainer):
             features = [
                 col
                 for col in train_data.columns
-                if col != target_column and col != "Date"
+                if col != target_column and col != "Date" and train_data[col].dtype in ['int64', 'float64'] # Select only numerical cols
             ]
+            if not features:
+                print("Error: No numerical features to train on")
+                return None
+
             xgb_train = xgb.DMatrix(
                 train_data[features], label=train_data[target_column]
             )
@@ -65,8 +69,12 @@ class XGBoostModel(ModelTrainer):
             features = [
                 col
                 for col in test_data.columns
-                if col != target_column and col != "Date"
+                if col != target_column and col != "Date" and test_data[col].dtype in ['int64', 'float64']
             ]
+
+            if not features:
+                print("Error: No numerical features available to make predictions")
+                return None
             xgb_test = xgb.DMatrix(test_data[features])
             predictions = self.model.predict(xgb_test)
             return predictions
