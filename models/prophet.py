@@ -6,10 +6,12 @@ from models.model_trainer import ModelTrainer
 class ProphetModel(ModelTrainer):
     """Prophet model for forecasting time series."""
 
-    def __init__(self):
+    def __init__(self, changepoint_prior_scale=0.05):
         super().__init__()
         self.model = None
         self.trained = False
+        self.changepoint_prior_scale = changepoint_prior_scale
+
 
     def train(self, train_data, val_data=None, target_column="Adj Close"):
         """Trains the Prophet model."""
@@ -19,7 +21,7 @@ class ProphetModel(ModelTrainer):
         try:
             # Prophet requires a column called 'ds' and 'y', hence rename
             df_prophet = train_data.rename(columns={"Date": "ds", target_column: "y"})
-            self.model = Prophet()
+            self.model = Prophet(changepoint_prior_scale = self.changepoint_prior_scale)
             self.model.fit(df_prophet)
             self.trained = True
             print("Prophet model has been trained.")
